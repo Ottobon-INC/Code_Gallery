@@ -20,6 +20,7 @@ const CreateComponentSchema = z.object({
     author_id: z.string().uuid('author_id must be a valid UUID'),
     stack: z.enum(VALID_STACKS).default('vite-react-ts'),
     category: z.string().max(50).default('uncategorized'),
+    image_url: z.string().optional(),
 });
 
 // ─── GET /list ───────────────────────────────────────────────────────────────
@@ -29,7 +30,7 @@ router.get('/list', async (req: Request, res: Response) => {
 
         let sql = `SELECT c.id, c.title, c.description, c.raw_code, c.author_id,
                    COALESCE(u.name, split_part(u.email, '@', 1)) AS author_name,
-                   c.usage_count, c.likes, c.stack, c.category, c.created_at
+                   c.usage_count, c.likes, c.stack, c.category, c.image_url, c.created_at
             FROM components c
             LEFT JOIN users u ON u.id = c.author_id`;
 
@@ -55,7 +56,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         const result = await query(
             `SELECT c.id, c.title, c.description, c.raw_code, c.author_id,
                     COALESCE(u.name, split_part(u.email, '@', 1)) AS author_name,
-                    c.usage_count, c.likes, c.stack, c.category, c.created_at
+                    c.usage_count, c.likes, c.stack, c.category, c.image_url, c.created_at
              FROM components c
              LEFT JOIN users u ON u.id = c.author_id
              WHERE c.id = $1`,
@@ -82,30 +83,27 @@ router.post('/', async (req: Request, res: Response) => {
         });
     }
 
-    const { title, description, raw_code, author_id, stack, category } = parsed.data;
+    const { title, description, raw_code, author_id, stack, category, image_url } = parsed.data;
 
     try {
         // Attempt to generate an embedding — gracefully skip if LLM is unavailable
         let embeddingClause = '';
-        const values: unknown[] = [title, description, raw_code, author_id];
+        const values: unknown[] = [title, description, raw_code, author_id, stack, category, image_url || null];
 
         try {
             const { generateComponentEmbedding } = await import('../../services/embedding');
             const vector = await generateComponentEmbedding(title, description, raw_code);
-            embeddingClause = `, embedding = $6::vector(1536)`;
+            embeddingClause = `, embedding = $8::vector(1536)`;
             values.push(`[${vector.join(',')}]`);
         } catch (embErr) {
             console.warn('[components] Embedding generation skipped (LLM unavailable):', embErr);
         }
 
         const sql = `
-            INSERT INTO components (title, description, raw_code, author_id, stack, category${embeddingClause ? ', embedding' : ''})
-            VALUES ($1, $2, $3, $4, $5, $6${embeddingClause ? ', $7::vector(1536)' : ''})
-            RETURNING id, title, description, author_id, usage_count, likes, stack, category, created_at
+            INSERT INTO components (title, description, raw_code, author_id, stack, category, image_url${embeddingClause ? ', embedding' : ''})
+            VALUES ($1, $2, $3, $4, $5, $6, $7${embeddingClause ? ', $8::vector(1536)' : ''})
+            RETURNING id, title, description, author_id, usage_count, likes, stack, category, image_url, created_at
         `;
-
-        values.splice(4, 0, stack); // Insert stack as 5th param
-        values.splice(5, 0, category); // Insert category as 6th param
 
         const result = await query(sql, values);
         return res.status(201).json({ success: true, data: result.rows[0] });

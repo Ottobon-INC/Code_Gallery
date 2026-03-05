@@ -9,20 +9,21 @@ export type SandpackTemplate =
     | 'vanilla'
     | 'static';
 
-export interface Component {
+export type Component = {
     id: string;
     title: string;
     description: string;
     raw_code: string;
+    stack: SandpackTemplate;
+    category?: string;
+    image_url?: string;
     author_id: string;
     author_name?: string;   // resolved via JOIN with users table
     usage_count: number;
     likes: number;
     created_at: string;
     updated_at: string;
-    category?: string;
-    stack: SandpackTemplate;
-}
+};
 
 export interface Bounty {
     id: string;

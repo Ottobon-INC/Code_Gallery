@@ -45,6 +45,9 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
     const [newCatLoading, setNewCatLoading] = useState(false);
     const [newCatError, setNewCatError] = useState<string | null>(null);
 
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -54,6 +57,14 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
 
     // For Toggling between JS/TS and CSS in the modal
     const [codeTab, setCodeTab] = useState<'component' | 'css'>('component');
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -92,12 +103,45 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
         setFieldErrors({});
         setLoading(true);
 
-        // Merge Component + CSS Code seamlessly behind the scenes
+        // 1. Merge Component + CSS Code seamlessly behind the scenes
         let finalCode = form.raw_code;
         if (form.css_code.trim()) {
             finalCode += `\n\n/* styles.css */\n${form.css_code}`;
         }
 
+        // 2. Handle optional image upload via base64
+        let uploadedImageUrl: string | undefined = undefined;
+        if (imageFile) {
+            try {
+                // Encode the image to base64 using FileReader
+                const base64Data = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = () => reject(new Error('Could not read image file.'));
+                    reader.readAsDataURL(imageFile);
+                });
+
+                const uploadRes = await fetch(`${API_URL}/api/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: base64Data, mimeType: imageFile.type }),
+                });
+
+                const uploadJson = await uploadRes.json();
+                if (uploadRes.ok && uploadJson.success) {
+                    uploadedImageUrl = `${API_URL}${uploadJson.data.url}`;
+                } else {
+                    throw new Error(uploadJson.error || 'Failed to upload image');
+                }
+            } catch (err) {
+                console.error('[NewComponentModal] Image upload error:', err);
+                setError((err as Error).message || 'Failed to upload image. Please try again.');
+                setLoading(false);
+                return;
+            }
+        }
+
+        // 3. Submit component data
         try {
             const res = await fetch(`${API_URL}/api/components`, {
                 method: 'POST',
@@ -109,6 +153,7 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
                     stack: selectedStack,
                     category: selectedCategory,
                     author_id: (session?.user as { id?: string })?.id,
+                    image_url: uploadedImageUrl,
                 }),
             });
 
@@ -123,7 +168,11 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
                 return;
             }
 
+            // Cleanup form state
+            if (imagePreview) URL.revokeObjectURL(imagePreview);
             setForm({ title: '', description: '', raw_code: '', css_code: '' });
+            setImageFile(null);
+            setImagePreview(null);
             setSelectedStack('vite-react-ts');
             setSelectedCategory('uncategorized');
             setOpen(false);
@@ -255,6 +304,35 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
                                     className="w-full bg-hub-surface border border-hub-border rounded-md px-3 py-2 text-hub-text text-sm placeholder:text-hub-muted/50 focus:outline-none focus:border-white/30 transition-colors resize-none"
                                 />
                                 {fieldErrors.description && <p className="text-red-400 text-xs mt-1">{fieldErrors.description[0]}</p>}
+                            </div>
+
+                            {/* Image Upload */}
+                            <div>
+                                <label className="block text-xs font-semibold text-hub-muted mb-1.5">Preview Image (optional)</label>
+                                <label className="flex items-center justify-center w-full h-24 px-4 transition bg-hub-surface border-2 border-dashed border-hub-border rounded-md appearance-none cursor-pointer hover:border-white/30 focus:outline-none overflow-hidden relative group">
+                                    <input
+                                        type="file"
+                                        name="image"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageChange}
+                                    />
+                                    {imagePreview ? (
+                                        <>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                                            <span className="relative z-10 flex items-center space-x-2 text-sm text-white drop-shadow-md bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                                                <span className="font-medium">Change image</span>
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <span className="flex items-center space-x-2 text-sm text-hub-muted/60">
+                                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                                            <span className="font-medium">Click to browse or drop an image</span>
+                                        </span>
+                                    )}
+                                </label>
                             </div>
 
                             {/* Code */}

@@ -16,6 +16,8 @@ import componentsCrudRouter from './routes/components/crud';
 import cliRouter from './routes/cli/fetch';
 import authRouter from './routes/auth/index';
 import categoriesRouter from './routes/categories/index';
+import uploadRouter from './routes/upload';
+import path from 'path';
 
 // ─── App Factory ──────────────────────────────────────────────────────────────
 export function createApp(): Application {
@@ -43,6 +45,10 @@ export function createApp(): Application {
     app.use('/api/cli/fetch', cliRouter);
     app.use('/api/auth', authRouter);
     app.use('/api/categories', categoriesRouter);
+    app.use('/api/upload', uploadRouter);
+
+    // Expose uploads directory so the frontend can render images via `<img src="http://localhost:3000/uploads/..." />`
+    app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
     // ── 404 Handler ─────────────────────────────────────────────
     app.use((_req: Request, res: Response) => {

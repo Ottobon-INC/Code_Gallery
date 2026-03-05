@@ -100,17 +100,26 @@ export function ComponentCard({ component }: ComponentCardProps) {
             href={`/components/${component.id}`}
             className="card group flex flex-col gap-3 p-4 hover:border-white/20 transition-all duration-200 block"
         >
-            {/* Preview area */}
-            <div className="h-32 rounded bg-hub-bg border border-hub-border flex items-center justify-center relative overflow-hidden group-hover:border-white/20 transition-colors">
-                <div
-                    className="absolute inset-0 opacity-[0.03]"
-                    style={{
-                        backgroundImage:
-                            'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-                        backgroundSize: '20px 20px',
-                    }}
-                />
-                <span className="text-hub-muted text-2xl relative z-10 group-hover:text-white transition-colors">◈</span>
+            {/* Component Preview / Image placeholder */}
+            <div className="h-40 bg-[#0A0A0C] border-b border-white/5 flex items-center justify-center relative overflow-hidden group-hover:bg-[#0f0f12] transition-colors rounded-t-xl">
+                {component.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={component.image_url}
+                        alt={`Preview of ${component.title}`}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                    />
+                ) : (
+                    <svg
+                        className="w-8 h-8 text-white/10 group-hover:text-white/20 transition-colors"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                    >
+                        <path d="M12 2L2 12l10 10 10-10L12 2z" />
+                    </svg>
+                )}
             </div>
 
             {/* Meta */}
