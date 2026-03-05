@@ -15,6 +15,7 @@ import componentsRouter from './routes/components/search';
 import componentsCrudRouter from './routes/components/crud';
 import cliRouter from './routes/cli/fetch';
 import authRouter from './routes/auth/index';
+import categoriesRouter from './routes/categories/index';
 
 // ─── App Factory ──────────────────────────────────────────────────────────────
 export function createApp(): Application {
@@ -41,6 +42,7 @@ export function createApp(): Application {
     app.use('/api/components', componentsCrudRouter); // list, get by id, create
     app.use('/api/cli/fetch', cliRouter);
     app.use('/api/auth', authRouter);
+    app.use('/api/categories', categoriesRouter);
 
     // ── 404 Handler ─────────────────────────────────────────────
     app.use((_req: Request, res: Response) => {

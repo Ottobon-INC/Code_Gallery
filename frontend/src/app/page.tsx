@@ -10,14 +10,11 @@ import { Component } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-const CATEGORIES = [
-    { id: 'all', label: 'All Components' },
-    { id: 'forms', label: 'Forms' },
-    { id: 'navigation', label: 'Navigation' },
-    { id: 'data-display', label: 'Data Display' },
-    { id: 'overlays', label: 'Overlays' },
-    { id: 'feedback', label: 'Feedback' },
-];
+export interface CategoryItem {
+    id: string;
+    label: string;
+    icon: string;
+}
 
 export default function HomePage() {
     const router = useRouter();
@@ -25,10 +22,21 @@ export default function HomePage() {
     const activeCategory = searchParams.get('category') ?? 'all';
 
     const [components, setComponents] = useState<Component[]>([]);
+    const [categories, setCategories] = useState<CategoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [apiError, setApiError] = useState<string | null>(null);
     const [filterOpen, setFilterOpen] = useState(false);
 
+    // ── Fetch categories from API ─────────────────────────────────────────────
+    const fetchCategories = useCallback(async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/categories`);
+            const json = await res.json();
+            if (json.success) setCategories(json.data);
+        } catch { /* ignore */ }
+    }, []);
+
+    // ── Fetch components from API ─────────────────────────────────────────────
     const fetchComponents = useCallback(async () => {
         setLoading(true);
         setApiError(null);
@@ -50,6 +58,7 @@ export default function HomePage() {
         }
     }, [activeCategory]);
 
+    useEffect(() => { fetchCategories(); }, [fetchCategories]);
     useEffect(() => { fetchComponents(); }, [fetchComponents]);
 
     const setCategory = (cat: string) => {
@@ -62,13 +71,19 @@ export default function HomePage() {
         router.push(`/?${params.toString()}`);
     };
 
-    const activeLabel = CATEGORIES.find(c => c.id === activeCategory)?.label ?? 'All Components';
+    const allItems: CategoryItem[] = [{ id: 'all', label: 'All Components', icon: '❖' }, ...categories];
+    const activeLabel = allItems.find(c => c.id === activeCategory)?.label ?? 'All Components';
 
     return (
         <>
             <CommandPalette />
             <div className="flex min-h-screen">
-                <Sidebar activeCategory={activeCategory} onCategoryChange={setCategory} />
+                <Sidebar
+                    activeCategory={activeCategory}
+                    onCategoryChange={setCategory}
+                    categories={categories}
+                    onCategoriesChanged={fetchCategories}
+                />
                 <main className="flex-1 min-w-0 overflow-y-auto">
                     <div className="p-10 max-w-[1600px] 2xl:mx-auto">
                         {/* Page header */}
@@ -103,15 +118,16 @@ export default function HomePage() {
 
                                     {filterOpen && (
                                         <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1f] border border-white/15 rounded-lg shadow-xl z-50 py-1.5 overflow-hidden">
-                                            {CATEGORIES.map(cat => (
+                                            {allItems.map(cat => (
                                                 <button
                                                     key={cat.id}
                                                     onClick={() => { setCategory(cat.id); setFilterOpen(false); }}
-                                                    className={`w-full text-left px-4 py-2 text-xs font-medium transition-colors ${activeCategory === cat.id
+                                                    className={`w-full text-left px-4 py-2 text-xs font-medium transition-colors flex items-center gap-2 ${activeCategory === cat.id
                                                             ? 'bg-blue-500/10 text-blue-400'
                                                             : 'text-hub-muted hover:bg-white/5 hover:text-white'
                                                         }`}
                                                 >
+                                                    <span className="text-[10px]">{cat.icon}</span>
                                                     {cat.label}
                                                 </button>
                                             ))}
@@ -119,7 +135,11 @@ export default function HomePage() {
                                     )}
                                 </div>
 
-                                <NewComponentModal onSuccess={fetchComponents} />
+                                <NewComponentModal
+                                    onSuccess={fetchComponents}
+                                    categories={categories}
+                                    onCategoryCreated={fetchCategories}
+                                />
                             </div>
                         </div>
 

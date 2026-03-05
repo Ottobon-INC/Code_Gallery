@@ -17,20 +17,19 @@ const STACKS: { id: SandpackTemplate; label: string; icon: string; color: string
     { id: 'vanilla', label: 'Vanilla JS', icon: '🟨', color: 'text-yellow-300 border-yellow-300/30 bg-yellow-300/5' },
 ];
 
-const CATEGORY_OPTIONS = [
-    { id: 'forms', label: 'Forms' },
-    { id: 'navigation', label: 'Navigation' },
-    { id: 'data-display', label: 'Data Display' },
-    { id: 'overlays', label: 'Overlays' },
-    { id: 'feedback', label: 'Feedback' },
-    { id: 'uncategorized', label: 'Uncategorized' },
-];
+interface CategoryItem {
+    id: string;
+    label: string;
+    icon: string;
+}
 
 interface Props {
     onSuccess?: () => void;
+    categories?: CategoryItem[];
+    onCategoryCreated?: () => void;
 }
 
-export function NewComponentModal({ onSuccess }: Props) {
+export function NewComponentModal({ onSuccess, categories = [], onCategoryCreated }: Props) {
     const { data: session } = useSession();
     const router = useRouter();
     const [open, setOpen] = useState(false);
@@ -40,15 +39,51 @@ export function NewComponentModal({ onSuccess }: Props) {
     const [selectedStack, setSelectedStack] = useState<SandpackTemplate>('vite-react-ts');
     const [selectedCategory, setSelectedCategory] = useState('uncategorized');
 
+    // ── New category inline creation ──────────────────────────────────────────
+    const [creatingCategory, setCreatingCategory] = useState(false);
+    const [newCatLabel, setNewCatLabel] = useState('');
+    const [newCatLoading, setNewCatLoading] = useState(false);
+    const [newCatError, setNewCatError] = useState<string | null>(null);
+
     const [form, setForm] = useState({
         title: '',
         description: '',
         raw_code: '',
+        css_code: '',
     });
+
+    // For Toggling between JS/TS and CSS in the modal
+    const [codeTab, setCodeTab] = useState<'component' | 'css'>('component');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-        setFieldErrors(prev => ({ ...prev, [e.target.name]: [] })); // clear field error on change
+        setFieldErrors(prev => ({ ...prev, [e.target.name]: [] }));
+    };
+
+    const handleCreateCategory = async () => {
+        if (!newCatLabel.trim()) return;
+        setNewCatError(null);
+        setNewCatLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/api/categories`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label: newCatLabel.trim() }),
+            });
+            const json = await res.json();
+            if (json.success) {
+                onCategoryCreated?.();
+                setSelectedCategory(json.data.id);
+                setNewCatLabel('');
+                setCreatingCategory(false);
+            } else {
+                setNewCatError(json.error ?? 'Failed');
+            }
+        } catch {
+            setNewCatError('API error');
+        } finally {
+            setNewCatLoading(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -57,12 +92,20 @@ export function NewComponentModal({ onSuccess }: Props) {
         setFieldErrors({});
         setLoading(true);
 
+        // Merge Component + CSS Code seamlessly behind the scenes
+        let finalCode = form.raw_code;
+        if (form.css_code.trim()) {
+            finalCode += `\n\n/* styles.css */\n${form.css_code}`;
+        }
+
         try {
             const res = await fetch(`${API_URL}/api/components`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...form,
+                    title: form.title,
+                    description: form.description,
+                    raw_code: finalCode,
                     stack: selectedStack,
                     category: selectedCategory,
                     author_id: (session?.user as { id?: string })?.id,
@@ -72,7 +115,6 @@ export function NewComponentModal({ onSuccess }: Props) {
             const json = await res.json();
 
             if (!res.ok || !json.success) {
-                // Surface field-level validation errors from the API
                 if (json.details) {
                     setFieldErrors(json.details);
                 } else {
@@ -81,12 +123,11 @@ export function NewComponentModal({ onSuccess }: Props) {
                 return;
             }
 
-            // Success — reset and close
-            setForm({ title: '', description: '', raw_code: '' });
+            setForm({ title: '', description: '', raw_code: '', css_code: '' });
             setSelectedStack('vite-react-ts');
             setSelectedCategory('uncategorized');
             setOpen(false);
-            router.refresh(); // Server component re-fetch
+            router.refresh();
             onSuccess?.();
         } catch (err) {
             setError('Could not reach the API. Is the backend server running on port 3000?');
@@ -112,7 +153,7 @@ export function NewComponentModal({ onSuccess }: Props) {
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
                     onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
                 >
-                    <div className="bg-[#0A0A0C] border border-white/10 rounded-xl w-full max-w-lg mx-4 p-6 shadow-2xl">
+                    <div className="bg-[#0A0A0C] border border-white/10 rounded-xl w-full max-w-lg mx-4 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="mb-5">
                             <h2 className="text-hub-text text-lg font-bold">Add Component to Registry</h2>
                             <p className="text-hub-muted text-xs mt-1">
@@ -144,17 +185,51 @@ export function NewComponentModal({ onSuccess }: Props) {
 
                             {/* Category Picker */}
                             <div>
-                                <label className="block text-xs font-semibold text-hub-muted mb-1.5">Category *</label>
-                                <select
-                                    value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                    className="w-full bg-hub-surface border border-hub-border rounded-md px-3 py-2 text-hub-text text-sm focus:outline-none focus:border-white/30 transition-colors appearance-none cursor-pointer"
-                                >
-                                    {CATEGORY_OPTIONS.map(opt => (
-                                        <option key={opt.id} value={opt.id}>{opt.label}</option>
-                                    ))}
-                                </select>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-semibold text-hub-muted">Category *</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCreatingCategory(!creatingCategory)}
+                                        className="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                                    >
+                                        {creatingCategory ? '← Back' : '+ New Category'}
+                                    </button>
+                                </div>
+
+                                {creatingCategory ? (
+                                    <div className="space-y-1.5">
+                                        <input
+                                            value={newCatLabel}
+                                            onChange={e => { setNewCatLabel(e.target.value); setNewCatError(null); }}
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(); } }}
+                                            placeholder="e.g. Charts, Tables, Modals..."
+                                            autoFocus
+                                            className="w-full bg-hub-surface border border-hub-border rounded-md px-3 py-2 text-hub-text text-sm placeholder:text-hub-muted/50 focus:outline-none focus:border-white/30 transition-colors"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleCreateCategory}
+                                            disabled={newCatLoading || !newCatLabel.trim()}
+                                            className="bg-white text-black text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                                        >
+                                            {newCatLoading ? 'Creating...' : 'Create Category'}
+                                        </button>
+                                        {newCatError && <p className="text-red-400 text-xs">{newCatError}</p>}
+                                    </div>
+                                ) : (
+                                    <select
+                                        value={selectedCategory}
+                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                        className="w-full bg-hub-surface border border-hub-border rounded-md px-3 py-2 text-hub-text text-sm focus:outline-none focus:border-white/30 transition-colors cursor-pointer"
+                                    >
+                                        <option value="uncategorized">Uncategorized</option>
+                                        {categories.map(opt => (
+                                            <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
+
                             {/* Title */}
                             <div>
                                 <label className="block text-xs font-semibold text-hub-muted mb-1.5">Component Name *</label>
@@ -184,15 +259,42 @@ export function NewComponentModal({ onSuccess }: Props) {
 
                             {/* Code */}
                             <div>
-                                <label className="block text-xs font-semibold text-hub-muted mb-1.5">Source Code *</label>
-                                <textarea
-                                    name="raw_code"
-                                    value={form.raw_code}
-                                    onChange={handleChange}
-                                    rows={8}
-                                    placeholder="// Paste your React/TypeScript component here..."
-                                    className="w-full bg-hub-surface border border-hub-border rounded-md px-3 py-2 text-hub-text text-xs font-mono placeholder:text-hub-muted/50 focus:outline-none focus:border-white/30 transition-colors resize-y"
-                                />
+                                <div className="flex items-center gap-4 mb-2 border-b border-hub-border pb-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCodeTab('component')}
+                                        className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${codeTab === 'component' ? 'text-white border-white' : 'text-hub-muted border-transparent hover:text-white'}`}
+                                    >
+                                        {selectedStack.includes('react') ? 'Component Code' : 'Source Code'} *
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCodeTab('css')}
+                                        className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${codeTab === 'css' ? 'text-white border-white' : 'text-hub-muted border-transparent hover:text-white'}`}
+                                    >
+                                        CSS <span className="text-[10px] font-normal text-hub-muted">(optional)</span>
+                                    </button>
+                                </div>
+
+                                {codeTab === 'component' ? (
+                                    <textarea
+                                        name="raw_code"
+                                        value={form.raw_code}
+                                        onChange={handleChange}
+                                        rows={8}
+                                        placeholder="// Paste your React/TypeScript component here..."
+                                        className="w-full bg-hub-surface border border-hub-border rounded-md px-3 py-2 text-hub-text text-xs font-mono placeholder:text-hub-muted/50 focus:outline-none focus:border-white/30 transition-colors resize-y"
+                                    />
+                                ) : (
+                                    <textarea
+                                        name="css_code"
+                                        value={form.css_code}
+                                        onChange={handleChange}
+                                        rows={8}
+                                        placeholder="/* Optional CSS styles. If you strictly use Tailwind, leave this blank */"
+                                        className="w-full bg-hub-surface border border-hub-border rounded-md px-3 py-2 text-hub-text text-xs font-mono placeholder:text-hub-muted/50 focus:outline-none focus:border-white/30 transition-colors resize-y"
+                                    />
+                                )}
                                 {fieldErrors.raw_code && <p className="text-red-400 text-xs mt-1">{fieldErrors.raw_code[0]}</p>}
                             </div>
 

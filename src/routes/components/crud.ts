@@ -12,7 +12,6 @@ const router = Router();
 
 // ─── Validation Schema ───────────────────────────────────────────────────────
 const VALID_STACKS = ['vite-react-ts', 'vite-react', 'vue', 'svelte', 'angular', 'vanilla', 'static'] as const;
-const VALID_CATEGORIES = ['forms', 'navigation', 'data-display', 'overlays', 'feedback', 'uncategorized'] as const;
 
 const CreateComponentSchema = z.object({
     title: z.string().min(2, 'Title must be at least 2 characters').max(100),
@@ -20,7 +19,7 @@ const CreateComponentSchema = z.object({
     raw_code: z.string().min(10, 'Code is required').max(50000),
     author_id: z.string().uuid('author_id must be a valid UUID'),
     stack: z.enum(VALID_STACKS).default('vite-react-ts'),
-    category: z.enum(VALID_CATEGORIES).default('uncategorized'),
+    category: z.string().max(50).default('uncategorized'),
 });
 
 // ─── GET /list ───────────────────────────────────────────────────────────────

@@ -1,8 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { LogOut } from 'lucide-react';
+import { LogOut, Plus } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+
+interface CategoryItem {
+    id: string;
+    label: string;
+    icon: string;
+}
 
 const BROWSE_ITEMS = [
     { label: 'All Components', id: 'all', icon: '❖' },
@@ -10,25 +19,55 @@ const BROWSE_ITEMS = [
     { label: 'Bounty Board', id: '_bounties', href: '/bounties', icon: '◎' },
 ];
 
-const CATEGORY_ITEMS = [
-    { label: 'Forms', id: 'forms', icon: '▣' },
-    { label: 'Navigation', id: 'navigation', icon: '▷' },
-    { label: 'Data Display', id: 'data-display', icon: '▤' },
-    { label: 'Overlays', id: 'overlays', icon: '◫' },
-    { label: 'Feedback', id: 'feedback', icon: '◌' },
-];
-
 interface SidebarProps {
     activeCategory?: string;
     onCategoryChange?: (cat: string) => void;
+    categories?: CategoryItem[];
+    onCategoriesChanged?: () => void;
 }
 
-export function Sidebar({ activeCategory = 'all', onCategoryChange }: SidebarProps) {
+export function Sidebar({
+    activeCategory = 'all',
+    onCategoryChange,
+    categories = [],
+    onCategoriesChanged,
+}: SidebarProps) {
     const pathname = usePathname();
     const { data: session } = useSession();
 
+    const [addingCategory, setAddingCategory] = useState(false);
+    const [newCategoryLabel, setNewCategoryLabel] = useState('');
+    const [addError, setAddError] = useState<string | null>(null);
+    const [adding, setAdding] = useState(false);
+
     const handleCategoryClick = (id: string) => {
         onCategoryChange?.(id);
+    };
+
+    const handleAddCategory = async () => {
+        if (!newCategoryLabel.trim()) return;
+        setAddError(null);
+        setAdding(true);
+
+        try {
+            const res = await fetch(`${API_URL}/api/categories`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label: newCategoryLabel.trim() }),
+            });
+            const json = await res.json();
+            if (json.success) {
+                setNewCategoryLabel('');
+                setAddingCategory(false);
+                onCategoriesChanged?.(); // re-fetch the list
+            } else {
+                setAddError(json.error ?? 'Failed to create category');
+            }
+        } catch {
+            setAddError('Could not reach the API');
+        } finally {
+            setAdding(false);
+        }
     };
 
     return (
@@ -86,13 +125,53 @@ export function Sidebar({ activeCategory = 'all', onCategoryChange }: SidebarPro
                     </div>
                 </div>
 
-                {/* Categories */}
+                {/* Dynamic Categories */}
                 <div>
-                    <h3 className="px-3 text-[10px] font-semibold text-hub-muted uppercase tracking-widest mb-2">
-                        Categories
-                    </h3>
+                    <div className="flex items-center justify-between px-3 mb-2">
+                        <h3 className="text-[10px] font-semibold text-hub-muted uppercase tracking-widest">
+                            Categories
+                        </h3>
+                        <button
+                            onClick={() => { setAddingCategory(!addingCategory); setAddError(null); }}
+                            title="Add new category"
+                            className="text-hub-muted hover:text-white transition-colors p-0.5 rounded hover:bg-white/10"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+
+                    {/* Add Category Form */}
+                    {addingCategory && (
+                        <div className="mx-3 mb-2 space-y-1.5">
+                            <input
+                                value={newCategoryLabel}
+                                onChange={e => { setNewCategoryLabel(e.target.value); setAddError(null); }}
+                                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') setAddingCategory(false); }}
+                                placeholder="Category name..."
+                                autoFocus
+                                className="w-full bg-hub-bg border border-hub-border rounded-md px-2.5 py-1.5 text-xs text-hub-text placeholder:text-hub-muted/50 focus:outline-none focus:border-white/30"
+                            />
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    onClick={handleAddCategory}
+                                    disabled={adding || !newCategoryLabel.trim()}
+                                    className="flex-1 bg-white text-black text-[10px] font-semibold py-1 rounded-md hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                                >
+                                    {adding ? 'Adding...' : 'Add'}
+                                </button>
+                                <button
+                                    onClick={() => setAddingCategory(false)}
+                                    className="text-hub-muted text-[10px] px-2 py-1 rounded-md hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                            {addError && <p className="text-red-400 text-[10px]">{addError}</p>}
+                        </div>
+                    )}
+
                     <div className="space-y-0.5">
-                        {CATEGORY_ITEMS.map(item => {
+                        {categories.map(item => {
                             const isActive = activeCategory === item.id;
                             return (
                                 <button
@@ -110,6 +189,9 @@ export function Sidebar({ activeCategory = 'all', onCategoryChange }: SidebarPro
                                 </button>
                             );
                         })}
+                        {categories.length === 0 && (
+                            <p className="text-hub-muted text-[10px] px-3 py-2">No categories yet</p>
+                        )}
                     </div>
                 </div>
 
@@ -133,7 +215,6 @@ export function Sidebar({ activeCategory = 'all', onCategoryChange }: SidebarPro
 
             {/* Footer / User */}
             <div className="p-4 border-t border-hub-border space-y-2">
-                {/* User info */}
                 <div className="flex items-center gap-3 px-1">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-blue-500 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0">
                         {(session?.user as { name?: string })?.name?.charAt(0)
@@ -149,8 +230,6 @@ export function Sidebar({ activeCategory = 'all', onCategoryChange }: SidebarPro
                         </p>
                     </div>
                 </div>
-
-                {/* Sign out button */}
                 <button
                     onClick={() => signOut({ callbackUrl: '/login' })}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-hub-muted hover:text-red-400 hover:bg-red-400/5 border border-transparent hover:border-red-400/20 transition-all duration-200 group"
