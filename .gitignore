@@ -1,0 +1,16 @@
+# Node
+node_modules/
+dist/
+npm-debug.log*
+
+# Environment — NEVER commit real secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.dbhi ra
+
+# Editor
+.vscode/
+.idea/
+*.swp

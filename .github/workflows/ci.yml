@@ -1,0 +1,39 @@
+name: Component Hub CI/CD
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality-control:
+    name: Lint, Type Check, and Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Frontend Strict Linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Frontend Type Check
+        working-directory: ./frontend
+        run: npm run type-check
+
+      - name: Frontend Build Verification
+        working-directory: ./frontend
+        run: npm run build
