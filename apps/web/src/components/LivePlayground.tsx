@@ -1,14 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
     SandpackProvider,
     SandpackCodeEditor,
-    SandpackPreview,
-    useSandpack
 } from '@codesandbox/sandpack-react';
-// react-resizable-panels removed — using native CSS flex split for stability
-import { Monitor, Smartphone, Tablet, Moon, Sun } from 'lucide-react';
 import type { Component, SandpackTemplate } from '@/types';
 
 interface LivePlaygroundProps {
@@ -82,73 +78,6 @@ html, body {
 `;
 
 
-// ─── Custom Preview Toolbar ─────────────────────────────────────
-
-function PreviewToolbar({
-    viewport,
-    setViewport,
-    isDark,
-    setIsDark
-}: {
-    viewport: 'desktop' | 'tablet' | 'mobile';
-    setViewport: (v: 'desktop' | 'tablet' | 'mobile') => void;
-    isDark: boolean;
-    setIsDark: (d: boolean) => void;
-}) {
-    const { sandpack } = useSandpack();
-    const { status } = sandpack;
-
-    return (
-        <div className="flex flex-wrap items-center justify-between px-4 h-12 bg-hub-bg border-b border-hub-border z-10 shrink-0">
-            <div className="flex items-center gap-1.5 bg-hub-surface rounded-md p-1 border border-hub-border">
-                <button
-                    onClick={() => setViewport('desktop')}
-                    className={`p-1.5 rounded-sm transition-colors ${viewport === 'desktop' ? 'bg-white/10 text-white' : 'text-hub-muted hover:text-white'}`}
-                    title="Desktop"
-                >
-                    <Monitor className="w-3.5 h-3.5" />
-                </button>
-                <button
-                    onClick={() => setViewport('tablet')}
-                    className={`p-1.5 rounded-sm transition-colors ${viewport === 'tablet' ? 'bg-white/10 text-white' : 'text-hub-muted hover:text-white'}`}
-                    title="Tablet"
-                >
-                    <Tablet className="w-3.5 h-3.5" />
-                </button>
-                <button
-                    onClick={() => setViewport('mobile')}
-                    className={`p-1.5 rounded-sm transition-colors ${viewport === 'mobile' ? 'bg-white/10 text-white' : 'text-hub-muted hover:text-white'}`}
-                    title="Mobile"
-                >
-                    <Smartphone className="w-3.5 h-3.5" />
-                </button>
-            </div>
-
-            <div className="flex items-center gap-3">
-                {status === 'running' ? (
-                    <div className="flex items-center gap-2 text-xs text-hub-muted font-mono animate-pulse">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500/80" />
-                        Compiling...
-                    </div>
-                ) : status === 'done' || status === 'idle' ? (
-                    <div className="flex items-center gap-2 text-xs text-hub-muted font-mono">
-                        <span className="w-2 h-2 rounded-full bg-green-500/80" />
-                        Ready
-                    </div>
-                ) : null}
-
-                <button
-                    onClick={() => setIsDark(!isDark)}
-                    className="p-1.5 ml-2 text-hub-muted hover:text-white transition-colors border border-transparent hover:border-hub-border rounded-md"
-                    title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                >
-                    {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
-            </div>
-        </div>
-    );
-}
-
 // ─── Main Component ──────────────────────────────────────────────
 
 // Maps each stack to the correct entry file name and Sandpack-compatible template
@@ -163,9 +92,6 @@ const STACK_CONFIG: Record<SandpackTemplate, { file: string; label: string }> = 
 };
 
 export function LivePlayground({ component }: LivePlaygroundProps) {
-    const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-    const [isDark, setIsDark] = useState(false);
-
     const stack = component.stack ?? 'vite-react-ts';
     const stackConfig = STACK_CONFIG[stack] ?? STACK_CONFIG['vite-react-ts'];
 
@@ -173,9 +99,6 @@ export function LivePlayground({ component }: LivePlaygroundProps) {
     const isReact = stack === 'vite-react-ts' || stack === 'vite-react';
     const componentFileStr = isReact ? (stack === 'vite-react-ts' ? '/Component.tsx' : '/Component.jsx') : stackConfig.file;
     const entryFileName = stackConfig.file;
-
-    // Determine viewport width constraint
-    const previewWidth = viewport === 'mobile' ? 'max-w-[375px]' : viewport === 'tablet' ? 'max-w-[768px]' : 'w-full';
 
     // Parse out potential inline CSS blocks (e.g. users pasting TSX and then /* styles.css */ ...css code...)
     const { componentCode, customCss } = React.useMemo(() => {
@@ -228,7 +151,7 @@ export function LivePlayground({ component }: LivePlaygroundProps) {
     }), []);
 
     return (
-        <div className="rounded-xl overflow-hidden border border-hub-border shadow-card flex flex-col h-[750px] bg-hub-surface">
+        <div className="rounded-xl overflow-hidden border border-hub-border shadow-card flex flex-col bg-hub-surface">
 
             {/* Universal Component Header */}
             <div className="flex items-center gap-3 px-4 h-12 shrink-0 border-b border-hub-border bg-[#0A0A0C]">
@@ -247,68 +170,42 @@ export function LivePlayground({ component }: LivePlaygroundProps) {
                 </div>
             </div>
 
-            {/* Resizable Split-Pane Layout */}
-            <div className="flex-1 overflow-hidden">
+            {/* Full-Width Code Editor */}
+            <div className="overflow-hidden">
                 <SandpackProvider
                     template={stack as SandpackTemplate}
                     theme={SANDPACK_THEME}
                     files={files}
                     customSetup={customSetup}
                 >
-                    {/* Simple CSS Flex Split: Code Editor left | Preview right */}
-                    <div className="flex h-full">
-                        {/* Left Pane: Code Editor */}
-                        <div className="flex flex-col w-1/2 relative h-full bg-[#000000] border-r border-hub-border">
-                            <div className="flex-1 min-h-0 overflow-y-auto relative custom-sandpack-wrapper">
-                                <SandpackCodeEditor
-                                    showLineNumbers
-                                    showTabs={true}
-                                    showInlineErrors
-                                    wrapContent
-                                />
-                            </div>
-                        </div>
-
-                        {/* Right Pane: Live Preview */}
-                        <div className="flex flex-col w-1/2 bg-hub-surface h-full relative">
-                            <PreviewToolbar
-                                viewport={viewport}
-                                setViewport={setViewport}
-                                isDark={isDark}
-                                setIsDark={setIsDark}
-                            />
-                            <div className="flex-1 overflow-auto bg-center shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center p-4">
-                                <div className={`w-full h-full bg-white shadow-2xl transition-all duration-300 rounded overflow-hidden ${previewWidth} border border-hub-border/50`}>
-                                    <SandpackPreview
-                                        showOpenInCodeSandbox={false}
-                                        showRefreshButton={false}
-                                        style={{ height: '100%', minHeight: '100%' }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                    <div className="custom-sandpack-wrapper">
+                        <SandpackCodeEditor
+                            showLineNumbers
+                            showTabs={true}
+                            showInlineErrors
+                            wrapContent
+                        />
                     </div>
                 </SandpackProvider>
             </div>
 
-            {/* Global Style Override for Sandpack Internals to fix overlapping borders */}
+            {/* Global Style Override for Sandpack Internals */}
             <style dangerouslySetInnerHTML={{
                 __html: `
         .custom-sandpack-wrapper .sp-wrapper {
-            height: 100%;
-            overflow: hidden;
+            height: auto;
         }
         .custom-sandpack-wrapper .sp-layout {
             border: none;
             border-radius: 0;
-            height: 100%;
+            height: auto;
         }
         .custom-sandpack-wrapper .sp-code-editor {
             overflow-y: auto !important;
-            height: 100% !important;
+            min-height: 400px;
         }
         .custom-sandpack-wrapper .cm-editor {
-            min-height: 100%;
+            min-height: 400px;
             height: auto !important;
         }
         .custom-sandpack-wrapper .cm-scroller {
