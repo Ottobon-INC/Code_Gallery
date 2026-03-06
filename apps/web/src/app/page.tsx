@@ -106,8 +106,8 @@ export default function HomePage() {
                                     <button
                                         onClick={() => setFilterOpen(!filterOpen)}
                                         className={`flex items-center gap-2 bg-hub-surface border text-hub-text text-xs font-semibold px-4 py-2.5 rounded-md hover:bg-white/5 transition-colors ${activeCategory !== 'all'
-                                                ? 'border-blue-500/50 text-blue-400'
-                                                : 'border-hub-border'
+                                            ? 'border-blue-500/50 text-blue-400'
+                                            : 'border-hub-border'
                                             }`}
                                     >
                                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -123,8 +123,8 @@ export default function HomePage() {
                                                     key={cat.id}
                                                     onClick={() => { setCategory(cat.id); setFilterOpen(false); }}
                                                     className={`w-full text-left px-4 py-2 text-xs font-medium transition-colors flex items-center gap-2 ${activeCategory === cat.id
-                                                            ? 'bg-blue-500/10 text-blue-400'
-                                                            : 'text-hub-muted hover:bg-white/5 hover:text-white'
+                                                        ? 'bg-blue-500/10 text-blue-400'
+                                                        : 'text-hub-muted hover:bg-white/5 hover:text-white'
                                                         }`}
                                                 >
                                                     <span className="text-[10px]">{cat.icon}</span>
@@ -166,7 +166,7 @@ export default function HomePage() {
 
                         {/* Component grid */}
                         {!loading && components.length > 0 && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {components.map((c) => (
                                     <ComponentCard key={c.id} component={c} />
                                 ))}

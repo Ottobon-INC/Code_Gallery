@@ -15,9 +15,8 @@ interface CategoryItem {
 
 const BROWSE_ITEMS = [
     { label: 'All Components', id: 'all', icon: '❖' },
-    { label: 'Analytics', id: '_analytics', href: '/analytics', icon: '◱' },
-    { label: 'Bounty Board', id: '_bounties', href: '/bounties', icon: '◎' },
 ];
+
 
 interface SidebarProps {
     activeCategory?: string;
@@ -103,16 +102,14 @@ export function Sidebar({
                     </h3>
                     <div className="space-y-0.5">
                         {BROWSE_ITEMS.map(item => {
-                            const isActive = item.href
-                                ? pathname.startsWith(item.href)
-                                : activeCategory === item.id;
+                            const isActive = activeCategory === item.id;
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => item.href ? window.location.href = item.href : handleCategoryClick(item.id)}
+                                    onClick={() => handleCategoryClick(item.id)}
                                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-left ${isActive
-                                            ? 'bg-hub-border text-hub-text'
-                                            : 'text-hub-muted hover:text-hub-text hover:bg-white/5'
+                                        ? 'bg-hub-border text-hub-text'
+                                        : 'text-hub-muted hover:text-hub-text hover:bg-white/5'
                                         }`}
                                 >
                                     <span className={`text-[10px] ${isActive ? 'text-blue-400' : 'text-hub-muted'}`}>
@@ -178,8 +175,8 @@ export function Sidebar({
                                     key={item.id}
                                     onClick={() => handleCategoryClick(item.id)}
                                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-left ${isActive
-                                            ? 'bg-hub-border text-hub-text'
-                                            : 'text-hub-muted hover:text-hub-text hover:bg-white/5'
+                                        ? 'bg-hub-border text-hub-text'
+                                        : 'text-hub-muted hover:text-hub-text hover:bg-white/5'
                                         }`}
                                 >
                                     <span className={`text-[10px] ${isActive ? 'text-blue-400' : 'text-hub-muted'}`}>

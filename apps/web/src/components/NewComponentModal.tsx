@@ -129,7 +129,7 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
 
                 const uploadJson = await uploadRes.json();
                 if (uploadRes.ok && uploadJson.success) {
-                    uploadedImageUrl = `${API_URL}${uploadJson.data.url}`;
+                    uploadedImageUrl = uploadJson.data.url; // already a full Supabase public URL
                 } else {
                     throw new Error(uploadJson.error || 'Failed to upload image');
                 }
@@ -191,7 +191,7 @@ export function NewComponentModal({ onSuccess, categories = [], onCategoryCreate
             {/* Trigger Button */}
             <button
                 onClick={() => setOpen(true)}
-                className="bg-white text-black text-xs font-semibold px-4 py-2.5 rounded-md hover:bg-gray-200 transition-colors"
+                className="bg-neutral-100 text-neutral-900 hover:bg-neutral-200 ring-1 ring-inset ring-white/20 shadow-sm transition-all text-sm font-medium px-4 py-2 rounded-lg"
             >
                 + New Component
             </button>
