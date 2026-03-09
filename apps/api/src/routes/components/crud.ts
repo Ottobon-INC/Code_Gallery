@@ -27,17 +27,28 @@ const CreateComponentSchema = z.object({
 router.get('/list', async (req: Request, res: Response) => {
     try {
         const category = req.query.category as string | undefined;
+        const userId = req.query.userId as string | undefined;
 
         let sql = `SELECT c.id, c.title, c.description, c.raw_code, c.author_id,
                    COALESCE(u.name, split_part(u.email, '@', 1)) AS author_name,
-                   c.usage_count, c.likes, c.stack, c.category, c.image_url, c.created_at
+                   c.usage_count, c.likes, c.stack, c.category, c.image_url, c.created_at`;
+
+        if (userId) {
+            sql += `, EXISTS(SELECT 1 FROM component_likes cl WHERE cl.component_id = c.id AND cl.user_id = $1) AS user_liked`;
+        } else {
+            sql += `, false AS user_liked`;
+        }
+
+        sql += `
             FROM components c
             LEFT JOIN users u ON u.id = c.author_id`;
 
         const values: string[] = [];
+        if (userId) values.push(userId);
+
         if (category && category !== 'all') {
-            sql += ` WHERE c.category = $1`;
             values.push(category);
+            sql += ` WHERE c.category = $${values.length}`;
         }
         sql += ` ORDER BY c.created_at DESC`;
 
@@ -53,15 +64,27 @@ router.get('/list', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const result = await query(
-            `SELECT c.id, c.title, c.description, c.raw_code, c.author_id,
-                    COALESCE(u.name, split_part(u.email, '@', 1)) AS author_name,
-                    c.usage_count, c.likes, c.stack, c.category, c.image_url, c.created_at
+        const userId = req.query.userId as string | undefined;
+
+        let sql = `SELECT c.id, c.title, c.description, c.raw_code, c.author_id,
+                   COALESCE(u.name, split_part(u.email, '@', 1)) AS author_name,
+                   c.usage_count, c.likes, c.stack, c.category, c.image_url, c.created_at`;
+
+        if (userId) {
+            sql += `, EXISTS(SELECT 1 FROM component_likes cl WHERE cl.component_id = c.id AND cl.user_id = $2) AS user_liked`;
+        } else {
+            sql += `, false AS user_liked`;
+        }
+
+        sql += `
              FROM components c
              LEFT JOIN users u ON u.id = c.author_id
-             WHERE c.id = $1`,
-            [id]
-        );
+             WHERE c.id = $1`;
+
+        const values: any[] = [id];
+        if (userId) values.push(userId);
+
+        const result = await query(sql, values);
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Component not found.' });
         }

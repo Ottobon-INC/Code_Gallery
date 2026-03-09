@@ -21,6 +21,7 @@ export type Component = {
     author_name?: string;   // resolved via JOIN with users table
     usage_count: number;
     likes: number;
+    user_liked?: boolean;
     created_at: string;
     updated_at: string;
 };

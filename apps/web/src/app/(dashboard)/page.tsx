@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { ComponentCard } from '@/components/ComponentCard';
 import { NewComponentModal } from '@/components/NewComponentModal';
 import { Component } from '@/types';
@@ -8,6 +9,7 @@ import { Component } from '@/types';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export default function HomePage() {
+    const { data: session } = useSession();
     const [components, setComponents] = useState<Component[]>([]);
     const [loading, setLoading] = useState(true);
     const [apiError, setApiError] = useState<string | null>(null);
@@ -16,7 +18,10 @@ export default function HomePage() {
         setLoading(true);
         setApiError(null);
         try {
-            const res = await fetch(`${API_URL}/api/components/list`, { cache: 'no-store' });
+            const url = new URL(`${API_URL}/api/components/list`);
+            if (session?.user) url.searchParams.set('userId', (session.user as { id?: string }).id || '');
+
+            const res = await fetch(url.toString(), { cache: 'no-store' });
             if (!res.ok) throw new Error(`API returned ${res.status}`);
             const json = await res.json();
             if (json.success) {
@@ -30,7 +35,7 @@ export default function HomePage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [session]);
 
     useEffect(() => { fetchComponents(); }, [fetchComponents]);
 

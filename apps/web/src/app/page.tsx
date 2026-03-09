@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { ComponentCard } from '@/components/ComponentCard';
 import { NewComponentModal } from '@/components/NewComponentModal';
 import { Sidebar } from '@/components/Sidebar';
@@ -19,6 +20,7 @@ export interface CategoryItem {
 export default function HomePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session } = useSession();
     const activeCategory = searchParams.get('category') ?? 'all';
 
     const [components, setComponents] = useState<Component[]>([]);
@@ -41,8 +43,11 @@ export default function HomePage() {
         setLoading(true);
         setApiError(null);
         try {
-            const categoryParam = activeCategory !== 'all' ? `?category=${activeCategory}` : '';
-            const res = await fetch(`${API_URL}/api/components/list${categoryParam}`, { cache: 'no-store' });
+            const url = new URL(`${API_URL}/api/components/list`);
+            if (activeCategory !== 'all') url.searchParams.set('category', activeCategory);
+            if (session?.user) url.searchParams.set('userId', (session.user as { id?: string }).id || '');
+
+            const res = await fetch(url.toString(), { cache: 'no-store' });
             if (!res.ok) throw new Error(`API returned ${res.status}`);
             const json = await res.json();
             if (json.success) {
@@ -56,7 +61,7 @@ export default function HomePage() {
         } finally {
             setLoading(false);
         }
-    }, [activeCategory]);
+    }, [activeCategory, session]);
 
     useEffect(() => { fetchCategories(); }, [fetchCategories]);
     useEffect(() => { fetchComponents(); }, [fetchComponents]);

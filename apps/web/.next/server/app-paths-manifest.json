@@ -1,5 +1,8 @@
 {
+  "/components/[id]/page": "app/components/[id]/page.js",
   "/page": "app/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/components/[id]/page": "app/components/[id]/page.js"
+  "/login/page": "app/login/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/register/page": "app/register/page.js"
 }
