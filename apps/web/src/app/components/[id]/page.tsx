@@ -29,7 +29,7 @@ export default async function ComponentPage({ params }: Props) {
         <div className="min-h-screen">
             {/* ── Slim top bar ─────────────────────────────────────────── */}
             <div className="border-b border-white/[0.06] bg-neutral-950/60 backdrop-blur-sm sticky top-0 z-10">
-                <div className="max-w-[1600px] mx-auto px-10 h-12 flex items-center justify-between">
+                <div className="max-w-[1600px] mx-auto px-4 md:px-10 h-12 flex items-center justify-between">
                     {/* Breadcrumb */}
                     <div className="flex items-center gap-2 text-xs font-medium">
                         <a href="/" className="text-neutral-500 hover:text-white transition-colors">Components</a>
@@ -38,7 +38,7 @@ export default async function ComponentPage({ params }: Props) {
                     </div>
                     {/* Right pills */}
                     <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-semibold ring-1 ring-inset ring-white/10">
+                        <span className="px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-semibold ring-1 ring-inset ring-white/10 hidden sm:inline-block">
                             {stackLabel}
                         </span>
                         {component.category && component.category !== 'uncategorized' && (
@@ -51,11 +51,11 @@ export default async function ComponentPage({ params }: Props) {
             </div>
 
             {/* ── Main two-column body ──────────────────────────────────── */}
-            <div className="max-w-[1600px] mx-auto px-10 py-8">
-                <div className="grid gap-8" style={{ gridTemplateColumns: '1fr 360px' }}>
+            <div className="max-w-[1600px] mx-auto px-4 md:px-10 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
 
                     {/* ── LEFT: Code editor ──────────────────────────────── */}
-                    <div className="min-w-0">
+                    <div className="min-w-0 order-2 lg:order-1">
                         {/* Section label + copy button */}
                         <div className="flex items-center gap-2 mb-4">
                             <span className="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest">Source</span>
@@ -66,7 +66,7 @@ export default async function ComponentPage({ params }: Props) {
                     </div>
 
                     {/* ── RIGHT: Meta + image ─────────────────────────────── */}
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-6 order-1 lg:order-2">
 
                         {/* Title / description card */}
                         <div className="rounded-xl bg-neutral-900/50 ring-1 ring-inset ring-white/[0.08] p-5">

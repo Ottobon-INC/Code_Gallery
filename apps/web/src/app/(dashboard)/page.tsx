@@ -40,9 +40,9 @@ export default function HomePage() {
     useEffect(() => { fetchComponents(); }, [fetchComponents]);
 
     return (
-        <div className="p-10 max-w-[1600px] 2xl:mx-auto">
+        <div className="p-4 md:p-10 max-w-[1600px] 2xl:mx-auto">
             {/* Page header */}
-            <div className="mb-10 flex items-end justify-between">
+            <div className="mb-6 md:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-hub-text text-2xl font-bold tracking-tight mb-2">Component Library</h1>
                     <p className="text-hub-muted text-sm">
@@ -53,7 +53,7 @@ export default function HomePage() {
                         to search.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-start sm:self-auto">
                     <button className="bg-hub-surface border border-hub-border text-hub-text text-xs font-semibold px-4 py-2.5 rounded-md hover:bg-white/5 transition-colors">
                         Filter
                     </button>

@@ -82,15 +82,15 @@ export default function HomePage() {
     return (
         <>
             <CommandPalette />
-            <div className="flex min-h-screen">
+            <div className="flex flex-col md:flex-row min-h-screen">
                 <Sidebar
                     activeCategory={activeCategory}
                     onCategoryChange={setCategory}
                     categories={categories}
                     onCategoriesChanged={fetchCategories}
                 />
-                <main className="flex-1 min-w-0 overflow-y-auto">
-                    <div className="p-10 max-w-[1600px] 2xl:mx-auto">
+                <main className="flex-1 min-w-0 overflow-y-auto w-full">
+                    <div className="p-4 md:p-10 max-w-[1600px] 2xl:mx-auto">
                         {/* Page header */}
                         <div className="mb-10 flex items-end justify-between">
                             <div>
