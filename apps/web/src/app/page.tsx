@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ComponentCard } from '@/components/ComponentCard';
@@ -17,7 +17,7 @@ export interface CategoryItem {
     icon: string;
 }
 
-export default function HomePage() {
+function HomeContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session } = useSession();
@@ -194,5 +194,13 @@ export default function HomePage() {
                 </main>
             </div>
         </>
+    );
+}
+
+export default function HomePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-neutral-500">Loading workspace...</div>}>
+            <HomeContent />
+        </Suspense>
     );
 }
