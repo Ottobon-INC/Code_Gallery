@@ -3,6 +3,11 @@ node_modules/
 dist/
 npm-debug.log*
 
+# Next.js
+.next/
+out/
+build/
+
 # Environment — NEVER commit real secrets
 .env
 
