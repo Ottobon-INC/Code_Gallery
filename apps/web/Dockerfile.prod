@@ -13,7 +13,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY package.json ./
 COPY apps/web/package*.json ./apps/web/
 
-RUN cd apps/web && npm ci
+RUN cd apps/web && npm ci --legacy-peer-deps
 
 COPY apps/web/ ./apps/web/
 
