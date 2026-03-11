@@ -1,0 +1,39 @@
+# Stage 1: Build the backend
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Copy root manifest and api package
+COPY package.json ./
+COPY apps/api/package*.json ./apps/api/
+
+# Install dependencies (ignoring scripts to be safe)
+RUN cd apps/api && npm ci --ignore-scripts
+
+# Copy the rest of the source code
+COPY apps/api/ ./apps/api/
+
+# Build the TypeScript project
+RUN cd apps/api && npm run build
+
+# Stage 2: Production runner
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy built artifacts and dependencies files
+COPY --from=builder /app/apps/api/package*.json ./apps/api/
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+
+# Install ONLY production dependencies
+RUN cd apps/api && npm ci --omit=dev --ignore-scripts
+
+WORKDIR /app/apps/api
+
+# Expose port
+EXPOSE 3000
+
+# Start the server
+CMD ["node", "dist/server.js"]

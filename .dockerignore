@@ -1,0 +1,40 @@
+# Dependency directories
+node_modules
+apps/api/node_modules
+apps/web/node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js build output
+.next
+apps/web/.next
+
+# TypeScript build output
+dist
+apps/api/dist
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Version control
+.git
+.gitignore
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

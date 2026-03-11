@@ -1,8 +1,1 @@
-{
-  "/login/page": "app/login/page.js",
-  "/forgot-password/page": "app/forgot-password/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/components/[id]/page": "app/components/[id]/page.js",
-  "/page": "app/page.js",
-  "/reset-password/page": "app/reset-password/page.js"
-}
+{}
