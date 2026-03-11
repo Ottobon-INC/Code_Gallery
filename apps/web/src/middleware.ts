@@ -40,7 +40,7 @@ export default withAuth(
     }
 );
 
-// Apply middleware to everything EXCEPT login, register, public assets, and Next.js internals
+// Apply middleware to everything EXCEPT login, register, forgot-password, reset-password, public assets, and Next.js internals
 export const config = {
-    matcher: ['/((?!login|register|api|_next/static|_next/image|favicon.ico).*)'],
+    matcher: ['/((?!login|register|forgot-password|reset-password|api|_next/static|_next/image|favicon.ico).*)'],
 };
